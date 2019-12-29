@@ -10,3 +10,4 @@
 [submodule "vendor/zlib"]
 	path = vendor/zlib
 	url = https://github.com/serenial/zlib.git
+	ignore = untracked

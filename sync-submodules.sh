@@ -3,7 +3,7 @@
 # The required submodule commits are as follows:
 ZLIB=v1.2.11
 LIBSSH2=libssh2-1.9.0
-OPENSSL=OpenSSL_1_0_2u
+OPENSSL=1.1.1d
 LIBGIT2=v0.28.4
 
 # get the scripts current directory to allow for calls from outside the top-level
@@ -29,7 +29,7 @@ git checkout tags/$LIBSSH2
 
 #checkout openssl
 echo checking out openssl...
-cd $DIR/$VENDOR_PATH/openssl
+cd $DIR/$VENDOR_PATH/openssl-windows-binaries
 # fetch and ensure all tags are avaliable locally
 git fetch --all --tags --prune
 # checkout

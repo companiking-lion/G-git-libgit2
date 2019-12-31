@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+RUNTIME="x86"
+# RUNTIME="x64"
+
 # VS2015 Generators
 CMAKE_GENERATOR_ARG="Visual Studio 14 2015"
 #CMAKE_GENERATOR_ARG=\"Visual Studio 14 2015 Win64\"
@@ -22,7 +25,17 @@ VENDOR_PATH=vendor
 BUILD_DIR=$DIR/$VENDOR_PATH/build
 
 #lib output paths
-LIB_OUTPUT_DIR=$DIR/build/libs
+LIB_OUTPUT_DIR=$DIR/build/libs/$RUNTIME
+
+ZLIB_BASE_DIR=$DIR/build/libs/$RUNTIME/
+ZLIB_INCLUDE_DIR=$DIR/$VENDOR_PATH/zlib
+ZLIB_LIB_DIR=$ZLIB_BASE_DIR/Release
+
+OPEN_SSL_BASE_DIR=$DIR/$VENDOR_PATH/openssl-windows-binaries/build/$RUNTIME
+OPEN_SSL_INCLUDE_DIR=$OPEN_SSL_BASE_DIR/include
+OPEN_SSL_LIB_DIR=$OPEN_SSL_BASE_DIR/lib
+
+
 
 function createDir {
     # create directory but silence stderr by redirecting it
@@ -48,20 +61,10 @@ function buildZLIB {
     eval "cmake ../../zlib -G \"$CMAKE_GENERATOR_ARG\" -D LIBRARY_OUTPUT_PATH=\"$LIB_OUTPUT_DIR\" -D INSTALL_INC_DIR=\"$LIB_OUTPUT_DIR\" -D INSTALL_LIB_DIR=\"$LIB_OUTPUT_DIR\""
 
     cmake --build . --config $CMAKE_BUILD_TYPE
+
+    # rename the zconf.h.include file to zconf.h
+    mv "../../zlib/zconf.h.included" "../../zlib/zconf.h"
 }
-
-
-function buildOPENSSL{
-    # this is going to be difficult
-    # https://wiki.openssl.org/index.php/Compilation_and_Installation
-    # https://stackoverflow.com/questions/40007633/how-to-compile-openssl-on-windows
-    # nasm need to be installed and on the system path
-    # https://www.nasm.us/
-
-
-
-}
-
 
 function buildLIBSSH2 {
     LIB_DIR="libssh2"
@@ -70,18 +73,16 @@ function buildLIBSSH2 {
     
     cd $BUILD_DIR
 
-    # clean zlib directory
+    # clean lib directory
     rm -rf $LIB_DIR
 
-    # create zlib build-dir
+    # create lib build-dir
     mkdir $LIB_DIR
     cd $LIB_DIR
 
-    # call cmake
-    # use eval so arguments don't get truncated
-    #eval "cmake ../../zlib -G \"$CMAKE_GENERATOR_ARG\" -D LIBRARY_OUTPUT_PATH=\"$ZLIB_LIB_OUTPUT_DIR\" -D INSTALL_INC_DIR=\"$ZLIB_LIB_OUTPUT_DIR\" -D INSTALL_LIB_DIR=\"$ZLIB_LIB_OUTPUT_DIR\""
 
-    #cmake --build . --config $CMAKE_BUILD_TYPE
+    eval "cmake ../../libssh2 -G \"$CMAKE_GENERATOR_ARG\" -D BUILD_SHARED_LIBS=TRUE -D LIB_EAY_RELEASE=\"$OPEN_SSL_LIB_DIR/libcrypto.lib\" -D SSL_EAY_RELEASE=\"$OPEN_SSL_LIB_DIR/libssl.lib\" -D OPENSSL_INCLUDE_DIR=\"$OPEN_SSL_INCLUDE_DIR\" -D ENABLE_ZLIB_COMPRESSION=TRUE -D ZLIB_LIBRARY_RELEASE=\"$ZLIB_LIB_DIR/zlib.lib\" -D ZLIB_INCLUDE_DIR=\"$ZLIB_INCLUDE_DIR\""
+    cmake --build . --config $CMAKE_BUILD_TYPE
 }
 
 echo "synchronizing git submodules"
@@ -92,6 +93,4 @@ createDir $BUILD_DIR
 
 #buildZLIB
 
-#buildLIBSSH2
-
-
+buildLIBSSH2

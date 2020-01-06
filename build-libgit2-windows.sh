@@ -19,78 +19,209 @@ CMAKE_BUILD_TYPE="Release"
 # get the scripts current directory to allow for calls from outside the top-level
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-# create some path variables
-# base paths
-VENDOR_PATH=vendor
-BUILD_DIR=$DIR/$VENDOR_PATH/build
+####################
+## Path Variables ##
+####################
 
-#lib output paths
-LIB_OUTPUT_DIR=$DIR/build/libs/$RUNTIME
+# Library Output Path
+LIB_OUTPUT_DIR=$DIR/build/$RUNTIME
 
-ZLIB_BASE_DIR=$DIR/build/libs/$RUNTIME/
-ZLIB_INCLUDE_DIR=$DIR/$VENDOR_PATH/zlib
-ZLIB_LIB_DIR=$ZLIB_BASE_DIR/Release
+# Vendor Library Path
+VENDOR_ROOT=$DIR/vendor
 
-OPEN_SSL_BASE_DIR=$DIR/$VENDOR_PATH/openssl-windows-binaries/build/$RUNTIME
-OPEN_SSL_INCLUDE_DIR=$OPEN_SSL_BASE_DIR/include
-OPEN_SSL_LIB_DIR=$OPEN_SSL_BASE_DIR/lib
+# zlib
+ZLIB_SRC_DIR=$VENDOR_ROOT/zlib
+ZLIB_INSTALL_DIR=$LIB_OUTPUT_DIR/zlib
 
+ZLIB_INCLUDE_DIR=$ZLIB_INSTALL_DIR/include
+ZLIB_LIB_DIR=$ZLIB_INSTALL_DIR/lib
 
+# OpenSSL
+OPEN_SSL_SRC_DIR=$VENDOR_ROOT/openssl-windows-binaries/build/$RUNTIME
+OPEN_SSL_INSTALL_DIR=$LIB_OUTPUT_DIR/OpenSSL
+
+OPEN_SSL_INCLUDE_DIR=$OPEN_SSL_INSTALL_DIR/include
+OPEN_SSL_LIB_DIR=$OPEN_SSL_INSTALL_DIR/lib
+OPEN_SSL_BIN_DIR=$OPEN_SSL_INSTALL_DIR/bin
+
+#LibSSH2
+LIBSSH2_SRC_DIR=$VENDOR_ROOT/libssh2
+LIBSSH2_INSTALL_DIR=$LIB_OUTPUT_DIR/libssh2
+
+#LIBSSH2_INCLUDE_DIR=$LIBSSH2_BASE_DIR/include
+#LIBSSH2_LIB_DIR=$LIB_OUTPUT_DIR
+
+####################
+##    Functions   ##
+####################
 
 function createDir {
+
     # create directory but silence stderr by redirecting it
-    { output=$(mkdir $1 2>&1 1>&3-) ;} 3>&1
+    { output=$(mkdir -p $1 2>&1 1>&3-) ;} 3>&1
+}
+
+function echoMain {
+
+    echo "** $1 **"
+}
+
+function echoSub {
+
+    echo "=> $1"
 }
 
 function buildZLIB {
-    LIB_DIR="zlib"
 
-    echo "Building ZLIB with $CMAKE_GENERATOR_ARG"
+    echoMain "Building ZLIB with $CMAKE_GENERATOR_ARG"
+
+    cd "$ZLIB_SRC_DIR"
     
-    cd $BUILD_DIR
+    echoSub "Making sure zlib build directory exists"
+    createDir "build"
+    
+    cd build
 
-    # clean zlib directory
-    rm -rf $LIB_DIR
+    echoSub "Generating Windows CMAKE files"
 
-    # create zlib build-dir
-    mkdir $LIB_DIR
-    cd $LIB_DIR
-
-    # call cmake
     # use eval so arguments don't get truncated
-    eval "cmake ../../zlib -G \"$CMAKE_GENERATOR_ARG\" -D LIBRARY_OUTPUT_PATH=\"$LIB_OUTPUT_DIR\" -D INSTALL_INC_DIR=\"$LIB_OUTPUT_DIR\" -D INSTALL_LIB_DIR=\"$LIB_OUTPUT_DIR\""
+    eval "cmake .. -G \"$CMAKE_GENERATOR_ARG\" -D CMAKE_INSTALL_PREFIX=\"$ZLIB_INSTALL_DIR\""
 
+    echoSub "Building"
     cmake --build . --config $CMAKE_BUILD_TYPE
 
-    # rename the zconf.h.include file to zconf.h
-    mv "../../zlib/zconf.h.included" "../../zlib/zconf.h"
+    echoSub "Installing to: $ZLIB_INSTALL_DIR"
+    cmake --install .
+}
+
+function copyOPENSSL {
+
+    echoMain "Copying Pre-Built OpenSSL Binaries"
+    echoSub "Copying to: $OPEN_SSL_INSTALL_DIR"
+    cp -r "$OPEN_SSL_SRC_DIR" "$OPEN_SSL_INSTALL_DIR"
 }
 
 function buildLIBSSH2 {
-    LIB_DIR="libssh2"
 
-    echo "Building libssh2 with $CMAKE_GENERATOR_ARG"
+    echoMain "Building LIBSSH2 with $CMAKE_GENERATOR_ARG"
+
+    cd "$LIBSSH2_SRC_DIR"
+    
+    echoSub "Making sure LibSSH2 build directory exists"
+
+    createDir "build"
+    
+    cd build
+
+    echoSub "Generating Windows CMAKE files"
+
+    #build with OPENSSL and ZLIB
+    # use eval so arguments don't get truncated
+    
+    # Note OpenSSL Releases from 1.1 renamed libeay.dll to libcrypto-x_x.dll and ssleay.dll to libssl-x_x.dll
+
+    OPEN_SSL_ARGS="-D SSL_EAY_RELEASE=\"$OPEN_SSL_LIB_DIR/libcrypto.lib\" -D SSL_EAY_RELEASE=\"$OPEN_SSL_LIB_DIR/libssl.lib\" -D OPENSSL_INCLUDE_DIR=\"$OPEN_SSL_INCLUDE_DIR\" -D DLL_LIBEAY32=\"$OPEN_SSL_BIN_DIR/libcrypto-1_1.dll\" -D DLL_SSLEAY32=\"$OPEN_SSL_BIN_DIR/libssl-1_1.dll\""
+    ZLIB_ARGS="-D ENABLE_ZLIB_COMPRESSION=TRUE -D ZLIB_LIBRARY_RELEASE=\"$ZLIB_LIB_DIR/zlib.lib\" -D ZLIB_INCLUDE_DIR=\"$ZLIB_INCLUDE_DIR\""
+    
+    eval "cmake ../../libssh2 -G \"$CMAKE_GENERATOR_ARG\" -D BUILD_SHARED_LIBS=TRUE  $OPEN_SSL_ARGS $ZLIB_ARGS -D CMAKE_INSTALL_PREFIX=\"$LIBSSH2_INSTALL_DIR\""
+    
+    echoSub "Building"
+    cmake --build . --config $CMAKE_BUILD_TYPE
+
+    echoSub "Installing to: $ZLIB_INSTALL_DIR"
+    cmake --install .
+
+
+#######################
+
+    # LIB_DIR="libssh2"
+
+    # echo "** Building libssh2 with $CMAKE_GENERATOR_ARG **"
+    
+    # cd $BUILD_DIR
+
+    # echo ". Cleaning Build Directory"
+    # # clean lib directory
+    # rm -rf $LIB_DIR
+
+    # echo ". Creating Build Directory"
+    # # create lib build-dir
+    # mkdir $LIB_DIR
+    # cd $LIB_DIR
+
+    # #build with OPENSSL and ZLIB
+    # # use eval so arguments don't get truncated
+    
+    # # Note OpenSSL Releases from 1.1 renamed libeay.dll to libcrypto-x_x.dll and ssleay.dll to libssl-x_x.dll
+
+    # OPEN_SSL_ARGS="-D SSL_EAY_RELEASE=\"$OPEN_SSL_LIB_DIR/libcrypto.lib\" -D SSL_EAY_RELEASE=\"$OPEN_SSL_LIB_DIR/libssl.lib\" -D OPENSSL_INCLUDE_DIR=\"$OPEN_SSL_INCLUDE_DIR\" -D DLL_LIBEAY32=\"$OPEN_SSL_BIN_DIR/libcrypto-1_1.dll\" -D DLL_SSLEAY32=\"$OPEN_SSL_BIN_DIR/libssl-1_1.dll\""
+    # ZLIB_ARGS="-D ENABLE_ZLIB_COMPRESSION=TRUE -D ZLIB_LIBRARY_RELEASE=\"$ZLIB_LIB_DIR/zlib.lib\" -D ZLIB_INCLUDE_DIR=\"$ZLIB_INCLUDE_DIR\""
+    
+    # eval "cmake ../../libssh2 -G \"$CMAKE_GENERATOR_ARG\" -D BUILD_SHARED_LIBS=TRUE $OPEN_SSL_ARGS $ZLIB_ARGS -D CMAKE_INSTALL_PREFIX=\"$LIB_OUTPUT_DIR/libssh2\""
+    
+    # #build
+    # cmake --build . --config $CMAKE_BUILD_TYPE
+
+    # # copy build files
+    # OUTPUT_DIR=$LIB_OUTPUT_DIR/../$RUNTIME
+    # createDir $OUTPUT_DIR
+
+    # # copy build files to Lib-Output Directory
+    # #cp -r "./src/$CMAKE_BUILD_TYPE" "$OUTPUT_DIR"
+}
+
+function buildLIBGIT2 {
+    LIB_DIR="libgit2"
+
+    echo "** Building libgit2 with $CMAKE_GENERATOR_ARG **"
     
     cd $BUILD_DIR
 
+    echo ". Cleaning Build Directory"
     # clean lib directory
-    rm -rf $LIB_DIR
+    #rm -rf $LIB_DIR
 
+    echo ". Creating Build Directory"
     # create lib build-dir
-    mkdir $LIB_DIR
+   # mkdir $LIB_DIR
     cd $LIB_DIR
 
+    #build with OPENSSL and ZLIB
+    # use eval so arguments don't get truncated
+    
+    # Note OpenSSL Releases from 1.1 renamed libeay.dll to libcrypto-x_x.dll and ssleay.dll to libssl-x_x.dll
 
-    eval "cmake ../../libssh2 -G \"$CMAKE_GENERATOR_ARG\" -D BUILD_SHARED_LIBS=TRUE -D LIB_EAY_RELEASE=\"$OPEN_SSL_LIB_DIR/libcrypto.lib\" -D SSL_EAY_RELEASE=\"$OPEN_SSL_LIB_DIR/libssl.lib\" -D OPENSSL_INCLUDE_DIR=\"$OPEN_SSL_INCLUDE_DIR\" -D ENABLE_ZLIB_COMPRESSION=TRUE -D ZLIB_LIBRARY_RELEASE=\"$ZLIB_LIB_DIR/zlib.lib\" -D ZLIB_INCLUDE_DIR=\"$ZLIB_INCLUDE_DIR\""
-    cmake --build . --config $CMAKE_BUILD_TYPE
+    OPEN_SSL_ARGS="-D LIB_EAY_RELEASE=\"$OPEN_SSL_LIB_DIR/libcrypto.lib\" -D SSL_EAY_RELEASE=\"$OPEN_SSL_LIB_DIR/libssl.lib\""
+    ZLIB_ARGS="-D ZLIB_INCLUDE_DIR=\"$ZLIB_INCLUDE_DIR\" -D ZLIB_LIBRARY_RELEASE=\"$ZLIB_LIB_DIR/zlib.lib\" "
+    
+    SSH_ARGS="-D EMBED_SSH_PATH=\"\""
+    
+    #SSH_ARGS="-D LIBSSH2_FOUND=True -D LIBSSH2_INCLUDE_DIRS=\"$LIBSSH2_INCLUDE_DIR\" -D LIBSSH2_LIBRARY_DIRS=\"$LIBSSH2_LIB_DIR\" -D LIBSSH2_LIBRARIES=\"$LIBSSH2_LIB_DIR/libssh2.lib\""
+    
+
+   # eval "cmake ../../libgit2 -G \"$CMAKE_GENERATOR_ARG\" -D BUILD_SHARED_LIBS=TRUE $OPEN_SSL_ARGS $ZLIB_ARGS $SSH_ARGS"
+    
+    #build
+    #cmake --build . --config $CMAKE_BUILD_TYPE
+
+    # # copy build files
+    # OUTPUT_DIR=$LIB_OUTPUT_DIR/../$RUNTIME
+    # createDir $OUTPUT_DIR
+
 }
+
 
 echo "synchronizing git submodules"
 #$DIR/sync-submodules.sh
 
-# create build dir
-createDir $BUILD_DIR
-
 #buildZLIB
-
+#copyOPENSSL
 buildLIBSSH2
+#buildLIBGIT2
+
+# echo $OPEN_SSL_SRC_DIR
+# echo $OPEN_SSL_INSTALL_DIR
+
+# echo $OPEN_SSL_INCLUDE_DIR
+# echo $OPEN_SSL_LIB_DIR
+# echo $OPEN_SSL_BIN_DIR

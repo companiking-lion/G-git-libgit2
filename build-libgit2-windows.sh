@@ -179,16 +179,21 @@ function buildLIBGIT2 {
     cmake --install .
 }
 
+#########################
+##    Script Build     ##
+#########################
+
 echoMain "synchronizing git submodules"
 ./sync-submodules.sh
 
-# build librarires in dependency order
+
+echoMain "Building ZLIB, OPENSSL, LIBSSH2 and LIBGIT2"
+
+# Build Librarires in Dependency-Order
 buildZLIB
-
 copyOPENSSL
-
 buildLIBSSH2
-
 buildLIBGIT2
 
+# Done!
 echoMain "All Libraries Built to: $LIB_OUTPUT_DIR"

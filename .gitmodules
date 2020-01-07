@@ -4,9 +4,11 @@
 [submodule "vendor/libgit2"]
 	path = vendor/libgit2
 	url = https://github.com/serenial/libgit2.git
+	ignore = untracked
 [submodule "vendor/libssh2"]
 	path = vendor/libssh2
 	url = https://github.com/serenial/libssh2.git
+	ignore = untracked
 [submodule "vendor/zlib"]
 	path = vendor/zlib
 	url = https://github.com/serenial/zlib.git

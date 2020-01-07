@@ -3,7 +3,7 @@
 # The required submodule commits are as follows:
 ZLIB=v1.2.11
 LIBSSH2=libssh2-1.9.0
-OPENSSL=1.1.1d
+OPENSSL=1.1.1d_2
 LIBGIT2=v0.28.4
 
 # get the scripts current directory to allow for calls from outside the top-level
@@ -43,7 +43,4 @@ git fetch --all --tags --prune
 # checkout
 git checkout tags/$LIBGIT2
 
-echo ""
-echo "***************************************"
-echo "*  Synchronizing Submodules Complete  *"
-echo "***************************************"
+echo "=> Synchronizing Submodules Complete"

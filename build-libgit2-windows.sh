@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 
 RUNTIME="x86"
-# RUNTIME="x64"
 
-# VS2015 Generators
+# VS2015 x86 Generator
 CMAKE_GENERATOR_ARG="Visual Studio 14 2015"
-#CMAKE_GENERATOR_ARG=\"Visual Studio 14 2015 Win64\"
+
+if [ "$1" = "x64" ]; then
+    RUNTIME="x64"
+    CMAKE_GENERATOR_ARG="Visual Studio 14 2015 Win64"
+fi
 
 # Alternative Generators for VS2019 (not tested)
 #CMAKE_GENERATOR_ARG="Visual Studio 16 2019" -A "Win32"
@@ -13,8 +16,6 @@ CMAKE_GENERATOR_ARG="Visual Studio 14 2015"
 
 #CMAKE_BUILD_TYPE=Debug
 CMAKE_BUILD_TYPE="Release"
-
-## TODO - Add command line arguments to specify build
 
 # get the scripts current directory to allow for calls from outside the top-level
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -24,7 +25,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 #########################
 
 # Library Output Path
-LIB_OUTPUT_DIR=$DIR/build/$RUNTIME
+LIB_OUTPUT_DIR=$DIR/build/WIN/$RUNTIME
 
 # Vendor Library Path
 VENDOR_ROOT=$DIR/vendor
@@ -184,10 +185,10 @@ function buildLIBGIT2 {
 #########################
 
 echoMain "synchronizing git submodules"
-./sync-submodules.sh
+$DIR/sync-submodules.sh
 
 
-echoMain "Building ZLIB, OPENSSL, LIBSSH2 and LIBGIT2"
+echoMain "Building ZLIB, OPENSSL, LIBSSH2 and LIBGIT2 for $RUNTIME"
 
 # Build Librarires in Dependency-Order
 buildZLIB

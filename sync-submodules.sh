@@ -18,6 +18,8 @@ cd $DIR/$VENDOR_PATH/zlib
 git fetch --all --tags --prune
 # checkout
 git checkout tags/$ZLIB
+git reset
+git clean -f
 
 #checkout libssh2
 echo checking out libssh2...
@@ -26,6 +28,8 @@ cd $DIR/$VENDOR_PATH/libssh2
 git fetch --all --tags --prune
 # checkout
 git checkout tags/$LIBSSH2
+git reset
+git clean -f
 
 #checkout openssl
 echo checking out openssl...
@@ -34,6 +38,8 @@ cd $DIR/$VENDOR_PATH/openssl-windows-binaries
 git fetch --all --tags --prune
 # checkout
 git checkout tags/$OPENSSL
+git reset
+git clean -f
 
 #checkout libgit2
 echo checking out libgit2...
@@ -42,5 +48,7 @@ cd $DIR/$VENDOR_PATH/libgit2
 git fetch --all --tags --prune
 # checkout
 git checkout tags/$LIBGIT2
+git reset
+git clean -f
 
 echo "=> Synchronizing Submodules Complete"

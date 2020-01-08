@@ -56,6 +56,9 @@ LIBSSH2_LIB_DIR=$LIBSSH2_INSTALL_DIR/lib
 LIBGIT2_SRC_DIR=$VENDOR_ROOT/libgit2
 LIBGIT2_INSTALL_DIR=$LIB_OUTPUT_DIR/libgit2
 
+# TAR File Name
+TAR_FILE_NAME="G-git-libgit2"
+
 #########################
 ##    Echo Functions   ##
 #########################
@@ -180,21 +183,46 @@ function buildLIBGIT2 {
     cmake --install .
 }
 
+
+function packageBuild {
+
+    OUTPUT_FILE_WIN="$LIB_OUTPUT_DIR/../$TAR_FILE_NAME-WIN.tar"
+
+    echoMain "Packaging Windows Files to: $OUTPUT_FILE_WIN.gz"
+
+    # use find to get all dlls then exec to wrap them into a tar
+
+    # use the --transform option to strip the path from /c/some_dirs/x64/some_other_dirs/git2.dll to /x64/git2.dll
+    # transform syntax 'flags=r;s|REGEX_PATTER|SUBSTITUTION_STRING|'
+    # NOTES: * Escape brackets in regex patter with \ char
+    #        * Use \1 \2 \3 etc. for regex capture groups in substituion string
+
+    find $BUILD_DIR -name "*.dll" -exec tar --transform='flags=r;s|^.*\(x[864]*\)[\/\\A-z0-9_-]*[\\\/]\(.*\)$|\1/\2|' -cf $OUTPUT_FILE_WIN {} +
+
+
+    gzip -f $OUTPUT_FILE_WIN
+}
+
 #########################
 ##    Script Build     ##
 #########################
 
 echoMain "synchronizing git submodules"
-$DIR/sync-submodules.sh
+#$DIR/sync-submodules.sh
 
 
 echoMain "Building ZLIB, OPENSSL, LIBSSH2 and LIBGIT2 for $RUNTIME"
 
 # Build Librarires in Dependency-Order
-buildZLIB
-copyOPENSSL
-buildLIBSSH2
-buildLIBGIT2
+#buildZLIB
+#copyOPENSSL
+#buildLIBSSH2
+#buildLIBGIT2
+
+echoMain "Packaging Files"
+
+packageBuild
 
 # Done!
 echoMain "All Libraries Built to: $LIB_OUTPUT_DIR"
+

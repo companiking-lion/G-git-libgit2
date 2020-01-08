@@ -25,7 +25,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 #########################
 
 # Library Output Path
-LIB_OUTPUT_DIR=$DIR/build/WIN/$RUNTIME
+WIN_BUILD_DIR=$DIR/build/WIN/
+LIB_OUTPUT_DIR=$WIN_BUILD_DIR/$RUNTIME
 
 # Vendor Library Path
 VENDOR_ROOT=$DIR/vendor
@@ -186,19 +187,20 @@ function buildLIBGIT2 {
 
 function packageBuild {
 
-    OUTPUT_FILE_WIN="$LIB_OUTPUT_DIR/../$TAR_FILE_NAME-WIN.tar"
+    OUTPUT_FILE_WIN="$WIN_BUILD_DIR/$TAR_FILE_NAME-WIN.tar"
 
-    echoMain "Packaging Windows Files to: $OUTPUT_FILE_WIN.gz"
+    echoSub "Packaging Windows Files to: $OUTPUT_FILE_WIN.gz"
 
     # use find to get all dlls then exec to wrap them into a tar
 
     # use the --transform option to strip the path from /c/some_dirs/x64/some_other_dirs/git2.dll to /x64/git2.dll
     # transform syntax 'flags=r;s|REGEX_PATTER|SUBSTITUTION_STRING|'
-    # NOTES: * Escape brackets in regex patter with \ char
+    # NOTES: * Escape brackets in regex pattern with \ char
     #        * Use \1 \2 \3 etc. for regex capture groups in substituion string
 
     find $BUILD_DIR -name "*.dll" -exec tar --transform='flags=r;s|^.*\(x[864]*\)[\/\\A-z0-9_-]*[\\\/]\(.*\)$|\1/\2|' -cf $OUTPUT_FILE_WIN {} +
 
+    echoSub "G-Zipping Files"
 
     gzip -f $OUTPUT_FILE_WIN
 }
@@ -208,16 +210,16 @@ function packageBuild {
 #########################
 
 echoMain "synchronizing git submodules"
-#$DIR/sync-submodules.sh
+$DIR/sync-submodules.sh
 
 
 echoMain "Building ZLIB, OPENSSL, LIBSSH2 and LIBGIT2 for $RUNTIME"
 
 # Build Librarires in Dependency-Order
-#buildZLIB
-#copyOPENSSL
-#buildLIBSSH2
-#buildLIBGIT2
+buildZLIB
+copyOPENSSL
+buildLIBSSH2
+buildLIBGIT2
 
 echoMain "Packaging Files"
 
